@@ -1,0 +1,19 @@
+function genetic_algorithm(population_size, num_generations, crossover_rate, mutation_rate):
+  population = initialize_population(population_size)
+
+  for generation in range(num_generations):
+    fitness_scores = evaluate_fitness(population)
+    selected_parents = select_parents(population, fitness_scores)
+
+    new_population = []
+    for i in range(population_size):
+      parent1, parent2 = select_parents(population, fitness_scores)
+      child = crossover(parent1, parent2, crossover_rate)
+      child = mutate(child, mutation_rate)
+      new_population.append(child)
+
+    population = new_population   
+
+
+  best_individual = find_best_individual(population, fitness_scores)
+  return best_individual
