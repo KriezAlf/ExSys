@@ -1,0 +1,63 @@
+import random
+import numpy as np
+
+# Definisi parameter PSO
+class Particle:
+    def __init__(self, dimensions):
+        self.position = np.random.uniform(-10, 10, dimensions)  # Inisialisasi posisi acak
+        self.velocity = np.random.uniform(-1, 1, dimensions)    # Inisialisasi kecepatan acak
+        self.pbest = {'position': self.position.copy(), 'fitness': float('-inf')}  # Personal best
+        self.fitness = float('-inf')
+
+def initialize_swarm(num_particles, dimensions):
+    return [Particle(dimensions) for _ in range(num_particles)]
+
+def evaluate_fitness(position):
+    # Fungsi fitness, misal menggunakan fungsi Sphere (minimization problem)
+    return -sum(position**2)
+
+def update_velocity(particle, gbest, w=0.5, c1=1.5, c2=1.5):
+    r1 = np.random.random(len(particle.position))
+    r2 = np.random.random(len(particle.position))
+    cognitive = c1 * r1 * (particle.pbest['position'] - particle.position)
+    social = c2 * r2 * (gbest['position'] - particle.position)
+    new_velocity = w * particle.velocity + cognitive + social
+    return new_velocity
+
+def update_position(particle):
+    return particle.position + particle.velocity
+
+def termination_criteria(iteration, max_iterations):
+    return iteration >= max_iterations
+
+# Main PSO algorithm
+def pso(num_particles, dimensions, max_iterations):
+    swarm = initialize_swarm(num_particles, dimensions)
+    gbest = {'position': np.random.uniform(-10, 10, dimensions), 'fitness': float('-inf')}
+
+    iteration = 0
+    while not termination_criteria(iteration, max_iterations):
+        for particle in swarm:
+            particle.fitness = evaluate_fitness(particle.position)
+
+            if particle.fitness > gbest['fitness']:
+                gbest['position'] = particle.position.copy()
+                gbest['fitness'] = particle.fitness
+
+            if particle.fitness > particle.pbest['fitness']:
+                particle.pbest['position'] = particle.position.copy()
+                particle.pbest['fitness'] = particle.fitness
+
+            particle.velocity = update_velocity(particle, gbest)
+            particle.position = update_position(particle)
+
+        iteration += 1
+
+    return gbest['position']
+
+num_particles = 30
+dimensions = 2
+max_iterations = 100
+
+best_position = pso(num_particles, dimensions, max_iterations)
+print(f"Best position found: {best_position}")
