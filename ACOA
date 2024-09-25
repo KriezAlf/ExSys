@@ -1,0 +1,78 @@
+import numpy as np
+import random
+
+# Problem definition (e.g., Traveling Salesman Problem)
+# Cities coordinates or distance matrix
+distance_matrix = [
+    [0, 39.1, 80.6, 36.9, 35.1],
+    [39.1, 0, 101, 27, 24.9],
+    [80.6, 101, 0, 84.9, 85.2],
+    [35.1, 24.9, 85.2, 4, 0]
+]
+num_cities = len(distance_matrix)
+
+# ACO Parameters Initialization
+num_ants = 5
+num_iterations = 100
+alpha = 1.0  # Pheromone importance
+beta = 1.0   # Distance importance
+evaporation_rate = 0.9
+pheromone_constant = 0.021
+
+# Initialize pheromone levels on all paths
+pheromones = np.ones((num_cities, num_cities))
+heuristics = 1 / (np.array(distance_matrix) + np.eye(num_cities))
+
+def probability(current_city, allowed_cities, pheromones, heuristics):
+    pheromone = pheromones[current_city, allowed_cities] ** alpha
+    heuristic = heuristics[current_city, allowed_cities] ** beta
+    probabilities = pheromone * heuristic
+    return probabilities / probabilities.sum()
+
+def ant_travel(pheromones, heuristics):
+    start_city = random.randint(0, num_cities - 1)
+    visited = [start_city]
+    total_distance = 0
+    
+    for _ in range(num_cities - 1):
+        current_city = visited[-1]
+        allowed_cities = list(set(range(num_cities)) - set(visited))
+        probabilities = probability(current_city, allowed_cities, pheromones, heuristics)
+        
+        next_city = np.random.choice(allowed_cities, p=probabilities)
+        visited.append(next_city)
+        total_distance += distance_matrix[current_city][next_city]
+    
+    total_distance += distance_matrix[visited[-1]][start_city]
+    visited.append(start_city)
+    
+    return visited, total_distance
+
+def pheromone_update(pheromones, ants_solutions, evaporation_rate, pheromone_constant):
+    pheromones *= (1 - evaporation_rate)
+    
+    for path, distance in ants_solutions:
+        pheromone_deposit = pheromone_constant / distance
+        for i in range(len(path) - 1):
+            pheromones[path[i]][path[i+1]] += pheromone_deposit
+
+# ACO main loop
+best_solution = None
+best_distance = float('inf')
+
+for iteration in range(num_iterations):
+    ants_solutions = []
+    
+    for _ in range(num_ants):
+        path, distance = ant_travel(pheromones, heuristics)
+        ants_solutions.append((path, distance))
+        
+        if distance < best_distance:
+            best_solution = path
+            best_distance = distance
+    
+    pheromone_update(pheromones, ants_solutions, evaporation_rate, pheromone_constant)
+    
+    print(f"Iteration {iteration+1}: Best distance = {best_distance}, Best path = {best_solution}")
+
+print(f"Best solution found: {best_solution} with distance {best_distance}")
