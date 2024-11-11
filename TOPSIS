@@ -1,0 +1,44 @@
+# Normalizes and weights each criterion in the dataset
+def Normalize(dataset, nCol, weights):
+    for i in range(1, nCol):
+        # Calculate the root of sum of squares for column
+        column_sum_squares = sum(dataset.iloc[j, i]**2 for j in range(len(dataset))) ** 0.5
+        # Normalize and apply weight for each element in column
+        for j in range(len(dataset)):
+            dataset.iat[j, i] = (dataset.iloc[j, i] / column_sum_squares) * weights[i-1]
+    print("Normalized and weighted dataset:\n", dataset)
+
+# Calculates positive and negative ideal solutions
+def Calc_Values(dataset, nCol, impact):
+    p_sln = dataset.max().values[1:]  # Ideal best (positive solution)
+    n_sln = dataset.min().values[1:]  # Ideal worst (negative solution)
+    for i in range(1, nCol):
+        if impact[i-1] == '-':  # If criterion has negative impact
+            p_sln[i-1], n_sln[i-1] = n_sln[i-1], p_sln[i-1]  # Swap values
+    return p_sln, n_sln
+
+# Main function to calculate TOPSIS scores and ranks
+def Topsis(dataset, nCol, weights, impact):
+    # Step 1: Normalize and weight the decision matrix
+    Normalize(dataset, nCol, weights)
+    
+    # Step 2: Calculate positive and negative ideal solutions
+    p_sln, n_sln = Calc_Values(dataset, nCol, impact)
+    
+    # Step 3: Calculate separation measures and TOPSIS score
+    scores, pp, nn = [], [], []
+    for i in range(len(dataset)):
+        distance_positive = sum((p_sln[j-1] - dataset.iloc[i, j])**2 for j in range(1, nCol)) ** 0.5
+        distance_negative = sum((n_sln[j-1] - dataset.iloc[i, j])**2 for j in range(1, nCol)) ** 0.5
+        scores.append(distance_negative / (distance_positive + distance_negative))
+        pp.append(distance_positive)
+        nn.append(distance_negative)
+    
+    # Append calculated values to dataset
+    dataset['Distance to Positive Ideal'] = pp
+    dataset['Distance to Negative Ideal'] = nn
+    dataset['TOPSIS Score'] = scores
+    dataset['Rank'] = dataset['TOPSIS Score'].rank(ascending=False).astype(int)
+
+    print("Final dataset with TOPSIS scores and ranks:\n", dataset)
+    return dataset
